@@ -12,47 +12,7 @@
 </head>
 <body>
 <div id="app">
-    <div class="product">
-        <div class="product-image">
-            <img :src="image" :alt="altText"/>
-        </div>
-        <div class="product-info">
-            <h1>{{ title }}</h1>
-            <p v-if="inStock">In stock</p>
-            <p :class="{textOutOf: !inStock}" v-else>Out of Stock</p>
-            <p>{{ sale }}</p> <!-- Добавлено отображение sale -->
-
-            <ul>
-                <li v-for="detail in details">{{ detail }}</li>
-            </ul>
-
-            <div
-                    class="color-box"
-                    v-for="(variant, index) in variants"
-                    :key="variant.variantId"
-                    :style="{ backgroundColor:variant.variantColor }"
-                    @mouseover="updateProduct(index)"
-            ></div>
-
-
-
-            <div class="cart">
-                <p>Cart({{ cart }})</p>
-            </div>
-
-            <button
-                    v-on:click="addToCart"
-                    :disabled="!inStock"
-                    :class="{ disabledButton: !inStock }"
-            >
-                Add to cart
-            </button>
-
-
-            <button v-on:click="deleteToCart">Delete to cart</button>
-
-        </div>
-    </div>
+    <product :premium="premium"></product>
 </div>
 </body>
 </html>
