@@ -29,10 +29,6 @@ Vue.component('product', {
           :class="{ active: selectedVariant === index }"
         ></div>
 
-        <div class="cart">
-          <p>Cart ({{ cart }})</p>
-        </div>
-
         <button
           v-on:click="addToCart"
           :disabled="!inStock"
@@ -41,7 +37,7 @@ Vue.component('product', {
           Add to cart
         </button>
 
-        <button v-on:click="deleteToCart" :disabled="cart === 0">Delete to cart</button>
+        <button v-on:click="deleteToCart" :disabled="cart.length === 0">Delete last item</button>
       </div>
     </div>
   `,
@@ -66,8 +62,9 @@ Vue.component('product', {
                     variantQuantity: 0,
                 }
             ],
-            cart: 0,
+
             selectedVariant: 0,
+            cart: 0
         };
     },
     computed: {
@@ -97,10 +94,12 @@ Vue.component('product', {
             this.selectedVariant = index;
         },
         addToCart() {
-            this.cart += 1;
+            this.$emit('add-to-cart',
+                this.variants[this.selectedVariant].variantId);
         },
+
         deleteToCart() {
-            this.cart -= 1;
+            this.$emit('delete-to-cart')
         }
     }
 });
@@ -121,10 +120,23 @@ Vue.component('product-details', {
   `
 });
 
-new Vue({
+let app = new Vue({
     el: '#app',
     data: {
-        premium: true
+        premium: true,  // Премиум статус
+        cart: []        // Массив товаров в корзине
+    },
+    methods: {
+        // Метод для добавления товара в корзину
+        updateCart(id) {
+            this.cart.push(id);
+        },
+
+        // Метод для удаления последнего товара из корзины
+        deleteCart() {
+            if (this.cart.length > 0) {
+                this.cart.pop();  // Удаляем последний товар из корзины
+            }
+        }
     }
 });
-
