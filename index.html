@@ -17,9 +17,10 @@
             <img :src="image" :alt="altText"/>
         </div>
         <div class="product-info">
-            <h1>{{ product }}</h1>
+            <h1>{{ title }}</h1>
             <p v-if="inStock">In stock</p>
             <p :class="{textOutOf: !inStock}" v-else>Out of Stock</p>
+            <p>{{ sale }}</p> <!-- Добавлено отображение sale -->
 
             <ul>
                 <li v-for="detail in details">{{ detail }}</li>
@@ -27,12 +28,12 @@
 
             <div
                     class="color-box"
-                    v-for="variant in variants"
+                    v-for="(variant, index) in variants"
                     :key="variant.variantId"
                     :style="{ backgroundColor:variant.variantColor }"
-                    @mouseover="updateProduct(variant.variantImage)"
-            >
-            </div>
+                    @mouseover="updateProduct(index)"
+            ></div>
+
 
 
             <div class="cart">
