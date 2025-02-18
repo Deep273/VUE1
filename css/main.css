@@ -91,3 +91,6 @@ textarea {
 .d-f{
     display: flex;
 }
+.textOutOf{
+    text-decoration: line-through;
+}
