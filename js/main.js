@@ -18,7 +18,9 @@ Vue.component('product', {
         <p v-else :class="{ textOutOf: !inStock }">Out of Stock</p>
         <p>{{ sale }}</p>
 
-        
+        <!-- Добавляем вывод среднего рейтинга -->
+        <p v-if="averageRating !== null">Average Rating: {{ averageRating }} / 5</p>
+
         <div
           class="color-box"
           v-for="(variant, index) in variants"
@@ -90,6 +92,17 @@ Vue.component('product', {
         },
         shipping() {
             return this.premium ? "Free" : "$2.99";
+        },
+        // Вычисляем средний рейтинг на основе отзывов
+        averageRating() {
+            if (this.reviews.length === 0) {
+                return null;  // Если отзывов нет, возвращаем null
+            }
+            let totalRating = 0;
+            this.reviews.forEach(review => {
+                totalRating += review.rating;
+            });
+            return (totalRating / this.reviews.length).toFixed(1);  // Возвращаем среднее, округленное до одного знака
         }
     },
     methods: {
