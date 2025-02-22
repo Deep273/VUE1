@@ -12,9 +12,12 @@
 </head>
 <body>
 <div id="app">
+    <!-- Отображение корзины -->
     <div class="cart">
-        <p>Cart({{ cart.length }})</p>
+        <p>Items in cart: {{ cart.length }}</p>
     </div>
+
+    <!-- Продукт -->
     <product :premium="premium" @add-to-cart="updateCart" @delete-to-cart="deleteCart"></product>
 </div>
 </body>

@@ -17,9 +17,13 @@ Vue.component('product', {
         <p v-if="inStock">In stock</p>
         <p v-else :class="{ textOutOf: !inStock }">Out of Stock</p>
         <p>{{ sale }}</p>
-
-        <!-- Добавляем вывод среднего рейтинга -->
+        
+         <!-- Добавляем вывод среднего рейтинга -->
         <p v-if="averageRating !== null">Average Rating: {{ averageRating }} / 5</p>
+
+        <!-- Показываем количество товара -->
+        <p>Available: {{ availableQuantity }}</p>
+        <p>Sold: {{ soldQuantity }}</p> <!-- Количество проданных товаров -->
 
         <div
           class="color-box"
@@ -38,15 +42,27 @@ Vue.component('product', {
           Add to cart
         </button>
 
-        <button v-on:click="deleteToCart" :disabled="cart.length === 0">Delete</button>
+        <button v-on:click="removeFromCart" :disabled="cart.length === 0">Remove from cart</button>
         
+        <!-- Кнопка для покупки всех товаров из корзины -->
+        <button v-on:click="buyAll" :disabled="cart.length === 0">Buy All</button>
+
         <br><br>
+        
+        <!-- Передаем отзывы в компонент product-tabs -->
         <product-tabs 
           :reviews="reviews" 
           :details="details"
           :shippingCost="shipping"
         ></product-tabs>
-        
+
+        <!-- Отображение корзины внутри компонента -->
+        <div class="cart">
+            <p>Items in cart: {{ cart.length }}</p>
+            <ul>
+                <li v-for="(item, index) in cart" :key="index">{{ item }}</li>
+            </ul>
+        </div>
       </div>
     </div>
   `,
@@ -62,6 +78,7 @@ Vue.component('product', {
                     variantColor: 'green',
                     variantImage: "./assets/vmSocks-green-onWhite.jpg",
                     variantQuantity: 10,
+                    soldQuantity: 0,  // Счетчик проданных товаров для варианта
                     onSale: true
                 },
                 {
@@ -69,10 +86,11 @@ Vue.component('product', {
                     variantColor: 'blue',
                     variantImage: "./assets/vmSocks-blue-onWhite.jpg",
                     variantQuantity: 0,
+                    soldQuantity: 0,  // Счетчик проданных товаров для варианта
                 }
             ],
             selectedVariant: 0,
-            cart: 0,
+            cart: [],  // Локальный массив для корзины
             reviews: []
         };
     },
@@ -86,6 +104,12 @@ Vue.component('product', {
         inStock() {
             return this.variants[this.selectedVariant].variantQuantity > 0;
         },
+        availableQuantity() {
+            return this.variants[this.selectedVariant].variantQuantity;
+        },
+        soldQuantity() {
+            return this.variants[this.selectedVariant].soldQuantity;  // Количество проданных товаров
+        },
         sale() {
             const variant = this.variants[this.selectedVariant];
             return variant.onSale ? `${this.brand} ${this.product} is on sale!` : `${this.brand} ${this.product} is not on sale`;
@@ -93,7 +117,6 @@ Vue.component('product', {
         shipping() {
             return this.premium ? "Free" : "$2.99";
         },
-        // Вычисляем средний рейтинг на основе отзывов
         averageRating() {
             if (this.reviews.length === 0) {
                 return null;  // Если отзывов нет, возвращаем null
@@ -110,10 +133,39 @@ Vue.component('product', {
             this.selectedVariant = index;
         },
         addToCart() {
-            this.$emit('add-to-cart', this.variants[this.selectedVariant].variantId);
+            if (this.variants[this.selectedVariant].variantQuantity > 0) {
+                const variantId = this.variants[this.selectedVariant].variantId;
+                // Добавляем товар в корзину (локальный массив)
+                this.cart.push(`${this.product} (${this.variants[this.selectedVariant].variantColor})`);
+
+                // Уменьшаем количество товара на складе
+                this.variants[this.selectedVariant].variantQuantity--;
+            }
         },
-        deleteToCart() {
-            this.$emit('delete-to-cart');
+        removeFromCart() {
+            if (this.cart.length > 0) {
+                // Удаляем последний товар из корзины
+                const removedItem = this.cart.pop();
+
+                // Увеличиваем количество товара на складе (если товар был в корзине)
+                const variant = this.variants.find(v => `${this.product} (${v.variantColor})` === removedItem);
+                if (variant) {
+                    variant.variantQuantity++;
+                }
+            }
+        },
+        buyAll() {
+            // Обрабатываем покупку всех товаров в корзине
+            this.cart.forEach(item => {
+                const variantColor = item.split('(')[1].split(')')[0].trim();
+                const variant = this.variants.find(v => v.variantColor === variantColor);
+                if (variant && variant.variantQuantity > 0) {
+                    variant.soldQuantity++;  // Увеличиваем счетчик проданных товаров
+                }
+            });
+
+            // Очищаем корзину после покупки
+            this.cart = [];
         }
     },
     created() {
@@ -125,8 +177,6 @@ Vue.component('product', {
         eventBus.$off('review-submitted');
     }
 });
-
-
 
 
 Vue.component('product-details', {
@@ -146,7 +196,7 @@ Vue.component('product-details', {
 });
 
 Vue.component('product-review', {
-    template: `
+    template: ` 
     <form class="review-form" @submit.prevent="onSubmit">
       <p v-if="errors.length">
         <b>Please correct the following error(s):</b>
@@ -222,38 +272,37 @@ Vue.component('product-review', {
     }
 });
 
-
 Vue.component('product-tabs', {
-    template: `
-     <div>
-       <ul>
-         <span class="tab"
+    template: ` 
+    <div>
+      <ul>
+        <span class="tab"
                :class="{ activeTab: selectedTab === tab }"
                v-for="(tab, index) in tabs"
                @click="selectedTab = tab"
-         >{{ tab }}</span>
-       </ul>
-       <div v-show="selectedTab === 'Reviews'">
-         <p v-if="!reviews.length">There are no reviews yet.</p>
-         <ul>
-           <li v-for="review in reviews">
-             <p>{{ review.name }}</p>
-             <p>Rating: {{ review.rating }}</p>
-             <p>{{ review.review }}</p>
-           </li>
-         </ul>
-       </div>
-       <div v-show="selectedTab === 'Make a Review'">
-         <product-review></product-review>
-       </div>
-       <div v-show="selectedTab === 'Shipping'">
-         <p>Shipping: {{ shippingCost }}</p>
-       </div>
-       <div v-show="selectedTab === 'Details'">
-         <product-details :details="details"></product-details>
-       </div>
-     </div>
-   `,
+        >{{ tab }}</span>
+      </ul>
+      <div v-show="selectedTab === 'Reviews'">
+        <p v-if="!reviews.length">There are no reviews yet.</p>
+        <ul>
+          <li v-for="review in reviews">
+            <p>{{ review.name }}</p>
+            <p>Rating: {{ review.rating }}</p>
+            <p>{{ review.review }}</p>
+          </li>
+        </ul>
+      </div>
+      <div v-show="selectedTab === 'Make a Review'">
+        <product-review></product-review>
+      </div>
+      <div v-show="selectedTab === 'Shipping'">
+        <p>Shipping: {{ shippingCost }}</p>
+      </div>
+      <div v-show="selectedTab === 'Details'">
+        <product-details :details="details"></product-details>
+      </div>
+    </div>
+  `,
     data() {
         return {
             tabs: ['Reviews', 'Make a Review', 'Shipping', 'Details'],  // Добавляем вкладки для Shipping и Details
@@ -277,7 +326,6 @@ Vue.component('product-tabs', {
 });
 
 
-
 let app = new Vue({
     el: '#app',
     data: {
@@ -296,4 +344,3 @@ let app = new Vue({
         }
     }
 });
-
